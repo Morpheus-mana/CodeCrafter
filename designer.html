@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<!--
+    CodeCrafter by Mana Soft
+    
+    Un outil de conception d'interfaces graphiques interactif et intuitif.
+    Permet de créer, modifier et exporter des designs web facilement.
+    
+    Fonctionnalités:
+    - Ajout d'éléments variés (texte, boutons, images, etc.)
+    - Modification des propriétés des éléments
+    - Personnalisation de la taille du canvas
+    - Exportation et importation de designs
+    - Historique des actions (undo/redo)
+    
+    Code by MorPeHuS
+-->
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeCrafter by Mana Soft</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Variables CSS */
+        :root {
+            --primary: #0078d4;
+            --primary-dark: #106ebe;
+            --primary-light: #2b88d8;
+            --secondary: #0078d7;
+            --success: #107c10;
+            --danger: #d13438;
+            --warning: #ffb900;
+            --bg-color: #f6f6f6;
+            --element-border: #c8c8c8;
+            --border-color: #e1e1e1;
+            --panel-bg: #f3f3f3;
+            --text-primary: #323130;
+            --text-secondary: #605e5c;
+            --header-bg: #333333;
+            --header-text: #ffffff;
+            --icon-color: #767676;
+            --selection-bg: #e6f2fa;
+            --hover-bg: #f4f4f4;
+        }
+        
+        /* Reset et styles de base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            height: 100vh;
+            color: var(--text-primary);
+        }
+        
+        /* Header/Toolbar principal */
+        #main-header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .header-section {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .header-section.left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+        }
+        
+        .header-section.center {
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .header-section.right {
+            flex: 0 0 auto;
+        }
+        
+        .header-button {
+            background: transparent;
+            color: var(--header-text);
+            border: none;
+            cursor: pointer;
+            padding: 0 15px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            border-radius: 3px;
+        }
+        
+        .header-button:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .header-button i {
+            margin-right: 8px;
+        }
+        
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        
+        .app-title i {
+            color: var(--primary-light);
+            margin-right: 10px;
+            font-size: 22px;
+        }
+        
+        /* Structure principale à trois colonnes */
+        #app-container {
+            display: flex;
+            height: calc(100vh - 50px);
+        }
+        
+        /* Panneau latéral gauche - Outils */
+        #left-panel {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+        }
+        
+        /* Zone centrale - Canvas */
+        #canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: auto;
+            padding: 20px;
+        }
+        
+        #canvas {
+            width: 800px;
+            height: 600px;
+            background: white;
+            border: 2px dashed #ccc;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        /* Panneau latéral droit - Propriétés */
+        #right-panel {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+        }
+        
+        /* Styles des panneaux */
+        .panel-header {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .panel-header i {
+            margin-right: 8px;
+            color: var(--icon-color);
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        /* Styles des accordéons */
+        .accordion {
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .accordion:last-child {
+            border-bottom: none;
+        }
+        
+        .accordion-header {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .accordion-header:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .accordion-icon {
+            margin-right: 10px;
+            color: var(--icon-color);
+            width: 20px;
+            text-align: center;
+        }
+        
+        .accordion-arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        
+        .accordion.active .accordion-arrow i {
+            transform: rotate(90deg);
+        }
+        
+        .accordion-content {
+            display: none;
+            padding: 5px 15px 5px 45px;
+        }
+        
+        .accordion.active .accordion-content {
+            display: block;
+        }
+        
+        /* Styles des éléments de contrôle */
+        .control-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 5px;
+        }
+        
+        .control-item:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .control-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        /* Styles des propriétés */
+        .property-group {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        .property-group:last-child {
+            border-bottom: none;
+        }
+        
+        .property-group-header {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 10px;
+            padding: 0 15px;
+            color: var(--text-secondary);
+        }
+        
+        .property-group-content {
+            padding: 0 15px;
+        }
+        
+        .property-row {
+            margin-bottom: 10px;
+        }
+        
+        .property-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .property-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            font-size: 13px;
+        }
+        
+        /* Styles des onglets */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--panel-bg);
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 15px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Barre d'outils contextuelle */
+        #context-toolbar {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+            padding: 5px;
+        }
+        
+        .context-btn {
+            width: 30px;
+            height: 30px;
+            background: none;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+        }
+        
+        .context-btn:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .context-btn.delete:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .context-separator {
+            width: 1px;
+            height: 20px;
+            background-color: var(--border-color);
+            margin: 0 5px;
+        }
+        
+        /* Styles des boutons */
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #0b6a0b;
+        }
+        
+        /* Notification */
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 9999;
+            font-size: 14px;
+        }
+        
+        #notification.success { background: var(--success); }
+        #notification.error { background: var(--danger); }
+        #notification.warning { background: var(--warning); }
+        
+        /* Styles pour les éléments du canvas */
+        .canvas-element {
+            position: absolute;
+            cursor: move;
+            min-width: 20px;
+            min-height: 20px;
+        }
+        
+        .canvas-element.selected {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary), 0 0 8px rgba(0, 120, 212, 0.5);
+            z-index: 10;
+        }
+        
+        /* Poignées de redimensionnement */
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            border: 1px solid #fff;
+            border-radius: 50%;
+            z-index: 20;
+        }
+        
+        .resize-handle.nw {
+            top: -5px;
+            left: -5px;
+            cursor: nw-resize;
+        }
+        
+        .resize-handle.ne {
+            top: -5px;
+            right: -5px;
+            cursor: ne-resize;
+        }
+        
+        .resize-handle.sw {
+            bottom: -5px;
+            left: -5px;
+            cursor: sw-resize;
+        }
+        
+        .resize-handle.se {
+            bottom: -5px;
+            right: -5px;
+            cursor: se-resize;
+        }
+        
+        .resize-handle.n {
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: n-resize;
+        }
+        
+        .resize-handle.e {
+            top: 50%;
+            right: -5px;
+            transform: translateY(-50%);
+            cursor: e-resize;
+        }
+        
+        .resize-handle.s {
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: s-resize;
+        }
+        
+        .resize-handle.w {
+            top: 50%;
+            left: -5px;
+            transform: translateY(-50%);
+            cursor: w-resize;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header principal avec navigation -->
+    <header id="main-header">
+        <div class="header-section left">
+            <div class="app-title"><img src="mana_soft_logo.png" style="height: 24px; margin-right: 8px; vertical-align: middle;">CodeCrafter&nbsp;&nbsp;<span style="font-size: 12px; opacity: 0.7;">by Mana Soft</span></div>
+        </div>
+        <div class="header-section center">
+            <button class="header-button" id="new-btn" onclick="newProject()"><i class="fas fa-file"></i>Nouveau</button>
+            <button class="header-button" id="open-btn" onclick="openProject()"><i class="fas fa-folder-open"></i>Ouvrir</button>
+            <button class="header-button" id="export-btn" onclick="exportDesign()"><i class="fas fa-save"></i>Exporter</button>
+            <button class="header-button" onclick="undo()" id="undo-btn"><i class="fas fa-undo"></i>Annuler</button>
+            <button class="header-button" onclick="redo()" id="redo-btn"><i class="fas fa-redo"></i>Rétablir</button>
+        </div>
+        <div class="header-section right">
+            <button class="header-button" onclick="toggleGrid()"><i class="fas fa-border-all"></i>Grille</button>
+            <button class="header-button" onclick="togglePreview()"><i class="fas fa-eye"></i>Aperçu</button>
+            <button class="header-button" onclick="customizeCanvas()"><i class="fas fa-expand-arrows-alt"></i>Taille Canvas</button>
+            <button class="header-button" onclick="selectCanvas()" style="background-color: var(--primary); color: white;"><i class="fas fa-expand"></i>Sélectionner Canvas</button>
+        <button class="header-button" id="taille-canvas-btn" onclick="customizeCanvas()"><i class="fas fa-ruler-combined"></i>Dimensions</button>
+        </div>
+    </header>
+    
+    <!-- Conteneur principal à trois colonnes -->
+    <div id="app-container">
+        <!-- Panneau latéral gauche - Outils -->
+        <div id="left-panel">
+            <div class="panel-header">
+                <i class="fas fa-puzzle-piece"></i> Insérer
+            </div>
+            
+            <div class="panel-content">
+                <!-- Section Recommandé -->
+                <div class="accordion active">
+                    <div class="accordion-header">
+                        <div class="accordion-icon"><i class="fas fa-star"></i></div>
+                        <span>Recommandé</span>
+                        <div class="accordion-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="control-item" onclick="addElement('text')">
+                            <div class="control-icon"><i class="fas fa-font"></i></div>
+                            <span>Texte</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('button')">
+                            <div class="control-icon"><i class="fas fa-square"></i></div>
+                            <span>Bouton</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('input')">
+                            <div class="control-icon"><i class="fas fa-keyboard"></i></div>
+                            <span>Champ de texte</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('container')">
+                            <div class="control-icon"><i class="fas fa-square-full"></i></div>
+                            <span>Conteneur</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('image')" id="image-btn">
+                            <div class="control-icon"><i class="fas fa-image"></i></div>
+                            <span>Image</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section Champs de texte -->
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <div class="accordion-icon"><i class="fas fa-keyboard"></i></div>
+                        <span>Champs de texte</span>
+                        <div class="accordion-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="control-item" onclick="addElement('input')">
+                            <div class="control-icon"><i class="fas fa-keyboard"></i></div>
+                            <span>Champ texte</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('textarea')">
+                            <div class="control-icon"><i class="fas fa-align-left"></i></div>
+                            <span>Zone de texte</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('number')">
+                            <div class="control-icon"><i class="fas fa-hashtag"></i></div>
+                            <span>Nombre</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section Contrôles -->
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <div class="accordion-icon"><i class="fas fa-sliders-h"></i></div>
+                        <span>Contrôles</span>
+                        <div class="accordion-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="control-item" onclick="addElement('button')">
+                            <div class="control-icon"><i class="fas fa-square"></i></div>
+                            <span>Bouton</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('checkbox')">
+                            <div class="control-icon"><i class="fas fa-check-square"></i></div>
+                            <span>Case à cocher</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('radio')">
+                            <div class="control-icon"><i class="fas fa-dot-circle"></i></div>
+                            <span>Bouton radio</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('dropdown')">
+                            <div class="control-icon"><i class="fas fa-caret-down"></i></div>
+                            <span>Liste déroulante</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('slider')">
+                            <div class="control-icon"><i class="fas fa-sliders-h"></i></div>
+                            <span>Curseur</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section Affichage -->
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <div class="accordion-icon"><i class="fas fa-desktop"></i></div>
+                        <span>Affichage</span>
+                        <div class="accordion-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="control-item" onclick="addElement('label')">
+                            <div class="control-icon"><i class="fas fa-tag"></i></div>
+                            <span>Label</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('heading')">
+                            <div class="control-icon"><i class="fas fa-heading"></i></div>
+                            <span>Titre</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('paragraph')">
+                            <div class="control-icon"><i class="fas fa-paragraph"></i></div>
+                            <span>Paragraphe</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('container')">
+                            <div class="control-icon"><i class="fas fa-square-full"></i></div>
+                            <span>Conteneur</span>
+                        </div>
+                        <div class="control-item" onclick="addElement('link')">
+                            <div class="control-icon"><i class="fas fa-link"></i></div>
+                            <span>Lien</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Zone centrale - Canvas de conception -->
+        <div id="canvas-container" style="position: relative;">
+            <!-- Affichage des dimensions du canvas -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;">
+                <span id="canvas-size-display" style="font-size: 12px; color: #666; background-color: #f5f5f5; padding: 3px 8px; border-radius: 3px; border: 1px solid #ddd;">800 x 600 px</span>
+            </div>
+            
+            <!-- Canvas principal -->
+            <div id="canvas" style="width: 800px; height: 600px; position: relative;">
+                <!-- Le contenu du canvas sera ajouté ici dynamiquement -->
+            </div>
+            
+            <!-- Barre d'outils contextuelle -->
+            <div id="context-toolbar">
+                <button class="context-btn" title="Aligner à gauche" onclick="alignElement('left')"><i class="fas fa-align-left"></i></button>
+                <button class="context-btn" title="Centrer" onclick="alignElement('center')"><i class="fas fa-align-center"></i></button>
+                <button class="context-btn" title="Aligner à droite" onclick="alignElement('right')"><i class="fas fa-align-right"></i></button>
+                <span class="context-separator"></span>
+                <button class="context-btn" title="Mettre au premier plan" onclick="bringToFront()"><i class="fas fa-level-up-alt"></i></button>
+                <button class="context-btn" title="Mettre en arrière-plan" onclick="sendToBack()"><i class="fas fa-level-down-alt"></i></button>
+                <span class="context-separator"></span>
+                <button class="context-btn" title="Dupliquer" onclick="duplicateElement()"><i class="fas fa-copy"></i></button>
+                <button class="context-btn delete" title="Supprimer" onclick="deleteElement()"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+        
+        <!-- Panneau latéral droit - Propriétés -->
+        <div id="right-panel">
+            <div class="panel-header">
+                <i class="fas fa-sliders-h"></i> Propriétés
+                <button id="toggle-properties" class="panel-toggle-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            
+            <div class="panel-content" id="properties-panel">
+                <!-- Message quand aucun élément n'est sélectionné -->
+                <div class="no-selection-message" style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                    <i class="fas fa-mouse-pointer" style="font-size: 32px; margin-bottom: 15px; display: block;"></i>
+                    <p>Sélectionnez un élément pour modifier ses propriétés</p>
+                </div>
+                
+                <!-- Propriétés de l'élément sélectionné (masqué par défaut) -->
+                <div id="element-properties" style="display: none;">
+                    <!-- Onglets pour naviguer entre les groupes de propriétés -->
+                    <div class="tabs">
+                        <button class="tab active" onclick="openTab(event, 'properties-tab')">Propriétés</button>
+                        <button class="tab" onclick="openTab(event, 'style-tab')">Apparence</button>
+                        <button class="tab" onclick="openTab(event, 'events-tab')">Avancé</button>
+                    </div>
+                    
+                    <!-- Contenu de l'onglet Propriétés -->
+                    <div id="properties-tab" class="tab-content active">
+                        <div class="property-group">
+                            <div class="property-group-header">Général</div>
+                            <div class="property-group-content">
+                                <div class="property-row">
+                                    <label class="property-label">Identifiant</label>
+                                    <input type="text" class="property-input" id="element-id">
+                                </div>
+                                <div class="property-row">
+                                    <label class="property-label">Texte</label>
+                                    <input type="text" class="property-input" id="element-text">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="property-group">
+                            <div class="property-group-header">Position et taille</div>
+                            <div class="property-group-content">
+                                <div class="property-row" style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label class="property-label">X</label>
+                                        <input type="number" class="property-input" id="element-x">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Y</label>
+                                        <input type="number" class="property-input" id="element-y">
+                                    </div>
+                                </div>
+                                <div class="property-row" style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Largeur</label>
+                                        <input type="number" class="property-input" id="element-width">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Hauteur</label>
+                                        <input type="number" class="property-input" id="element-height">
+                                    </div>
+                                </div>
+                                <div class="property-row" style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Rotation (°)</label>
+                                        <input type="number" class="property-input" id="element-rotation" min="0" max="360" value="0">
+                                    </div>
+                                </div>
+                                <div class="property-row" style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Padding X</label>
+                                        <input type="number" class="property-input" id="element-pdx" min="0" value="0">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label class="property-label">Padding Y</label>
+                                        <input type="number" class="property-input" id="element-pady" min="0" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenu de l'onglet Apparence -->
+                    <div id="style-tab" class="tab-content">
+                        <div class="property-group">
+                            <div class="property-group-header">Couleurs</div>
+                            <div class="property-group-content">
+                                <div class="property-row">
+                                    <label class="property-label">Couleur du texte</label>
+                                    <input type="color" class="property-input" id="element-color">
+                                </div>
+                                <div class="property-row">
+                                    <label class="property-label">Couleur d'arrière-plan</label>
+                                    <input type="color" class="property-input" id="element-bg-color">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="property-group">
+                            <div class="property-group-header">Bordure</div>
+                            <div class="property-group-content">
+                                <div class="property-row">
+                                    <label class="property-label">Style de bordure</label>
+                                    <select class="property-input" id="element-border-style">
+                                        <option value="none">Aucune</option>
+                                        <option value="solid">Solide</option>
+                                        <option value="dashed">Tirets</option>
+                                        <option value="dotted">Pointillés</option>
+                                    </select>
+                                </div>
+                                <div class="property-row">
+                                    <label class="property-label">Couleur de bordure</label>
+                                    <input type="color" class="property-input" id="element-border-color">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenu de l'onglet Avancé -->
+                    <div id="events-tab" class="tab-content">
+                        <div class="property-group">
+                            <div class="property-group-header">Actions</div>
+                            <div class="property-group-content">
+                                <div class="property-row">
+                                    <label class="property-label">Au clic</label>
+                                    <textarea class="property-input" id="element-onclick" rows="3" placeholder="Code JavaScript à exécuter"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 15px;">
+                        <button class="btn btn-success" style="width: 100%;" onclick="updateElementProperties()">Appliquer les modifications</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification"></div>
+    
+    <!-- Fichier input caché pour l'upload d'images -->
+    <input type="file" id="image-upload" accept="image/*" style="display:none">
+    
+    <!-- Script JavaScript -->
+    <script>
+    /**
+     * PowerSeb Designer PRO - JavaScript Core
+     * 
+     * Ce script contient toutes les fonctionnalités nécessaires pour faire fonctionner
+     * l'outil de conception PowerSeb Designer PRO. Il gère la manipulation des éléments,
+     * l'historique des actions, et l'exportation des designs.
+     * 
+     * Code by MorPeHuS
+     */
+    
+    // Variables globales
+    let selectedEl = null;
+    let stateHistory = [];
+    let currentStateIndex = -1;
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser les accordéons
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const accordion = this.parentElement;
+                accordion.classList.toggle('active');
+                
+                // Fermer les autres accordéons
+                if (accordion.classList.contains('active')) {
+                    document.querySelectorAll('.accordion.active').forEach(item => {
+                        if (item !== accordion) {
+                            item.classList.remove('active');
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Initialiser le canvas
+        document.getElementById('canvas').addEventListener('click', function(e) {
+            if (e.target === this) {
+                unselectAll();
+            }
+        });
+        
+        // Initialiser le panneau de propriétés
+        document.getElementById('toggle-properties').addEventListener('click', function() {
+            document.getElementById('right-panel').classList.toggle('collapsed');
+        });
+        
+        // Initialiser l'upload d'image
+        document.getElementById('image-btn').addEventListener('click', function() {
+            document.getElementById('image-upload').click();
+        });
+        
+        document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+        
+        // Sauvegarder l'état initial
+        saveState();
+        updateUndoRedoButtons();
+    });
+    
+    // Générateur d'identifiants uniques
+    function generateUniqueId(type) {
+        // Obtenir tous les éléments existants
+        const elements = document.querySelectorAll('.canvas-element');
+        let maxId = 0;
+        
+        // Trouver le plus grand ID existant pour ce type d'élément
+        elements.forEach(el => {
+            const id = el.id || '';
+            if (id.startsWith(type + '-')) {
+                const idNumber = parseInt(id.split('-')[1]);
+                if (!isNaN(idNumber) && idNumber > maxId) {
+                    maxId = idNumber;
+                }
+            }
+        });
+        
+        // Retourner un nouvel ID unique
+        return type + '-' + (maxId + 1);
+    }
+    
+    // Fonction pour ajouter un élément au canvas
+    function addElement(type) {
+        let el;
+        
+        switch(type) {
+            case 'text':
+                el = document.createElement('div');
+                el.className = 'canvas-element text-element';
+                el.id = generateUniqueId('text');
+                el.innerHTML = 'Texte';
+                el.style.color = '#000000';
+                el.style.fontSize = '16px';
+                break;
+                
+            case 'button':
+                el = document.createElement('button');
+                el.className = 'canvas-element button-element';
+                el.id = generateUniqueId('button');
+                el.innerHTML = 'Bouton';
+                el.style.padding = '8px 15px';
+                el.style.backgroundColor = '#0078d4';
+                el.style.color = '#ffffff';
+                el.style.border = 'none';
+                el.style.borderRadius = '3px';
+                break;
+                
+            case 'input':
+                el = document.createElement('input');
+                el.className = 'canvas-element input-element';
+                el.id = generateUniqueId('input');
+                el.type = 'text';
+                el.placeholder = 'Saisir du texte...';
+                el.style.padding = '8px';
+                el.style.border = '1px solid #c8c8c8';
+                el.style.borderRadius = '3px';
+                break;
+                
+            case 'container':
+                el = document.createElement('div');
+                el.className = 'canvas-element container-element';
+                el.id = generateUniqueId('container');
+                el.style.width = '200px';
+                el.style.height = '150px';
+                el.style.border = '1px solid #c8c8c8';
+                el.style.backgroundColor = '#f9f9f9';
+                break;
+                
+            case 'heading':
+                el = document.createElement('h2');
+                el.className = 'canvas-element heading-element';
+                el.id = generateUniqueId('heading');
+                el.innerHTML = 'Titre';
+                el.style.color = '#000000';
+                el.style.fontSize = '24px';
+                break;
+                
+            case 'paragraph':
+                el = document.createElement('p');
+                el.className = 'canvas-element paragraph-element';
+                el.id = generateUniqueId('paragraph');
+                el.innerHTML = 'Ceci est un paragraphe de texte. Vous pouvez modifier ce texte dans le panneau des propriétés.';
+                el.style.color = '#000000';
+                el.style.fontSize = '14px';
+                break;
+                
+            case 'checkbox':
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'canvas-element checkbox-container';
+                checkboxContainer.id = generateUniqueId('checkbox');
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'checkbox-input-' + Date.now();
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.innerHTML = 'Case à cocher';
+                
+                checkboxContainer.appendChild(checkbox);
+                checkboxContainer.appendChild(label);
+                el = checkboxContainer;
+                break;
+                
+            case 'radio':
+                const radioContainer = document.createElement('div');
+                radioContainer.className = 'canvas-element radio-container';
+                radioContainer.id = generateUniqueId('radio');
+                
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'radio-group';
+                radio.id = 'radio-input-' + Date.now();
+                
+                const radioLabel = document.createElement('label');
+                radioLabel.htmlFor = radio.id;
+                radioLabel.innerHTML = 'Option radio';
+                
+                radioContainer.appendChild(radio);
+                radioContainer.appendChild(radioLabel);
+                el = radioContainer;
+                break;
+                
+            case 'dropdown':
+                const select = document.createElement('select');
+                select.className = 'canvas-element dropdown-element';
+                select.id = generateUniqueId('dropdown');
+                
+                const option1 = document.createElement('option');
+                option1.value = 'option1';
+                option1.text = 'Option 1';
+                
+                const option2 = document.createElement('option');
+                option2.value = 'option2';
+                option2.text = 'Option 2';
+                
+                const option3 = document.createElement('option');
+                option3.value = 'option3';
+                option3.text = 'Option 3';
+                
+                select.appendChild(option1);
+                select.appendChild(option2);
+                select.appendChild(option3);
+                
+                select.style.padding = '8px';
+                select.style.border = '1px solid #c8c8c8';
+                select.style.borderRadius = '3px';
+                
+                el = select;
+                break;
+                
+            default:
+                el = document.createElement('div');
+                el.className = 'canvas-element';
+                el.id = generateUniqueId('element');
+                el.innerHTML = type;
+                break;
+        }
+        
+        // Positionner l'élément au centre du canvas
+        el.style.position = 'absolute';
+        el.style.left = '50%';
+        el.style.top = '50%';
+        el.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+        
+        // Initialiser le padding à zéro
+        el.style.paddingLeft = '0px';
+        el.style.paddingRight = '0px';
+        el.style.paddingTop = '0px';
+        el.style.paddingBottom = '0px';
+        
+        // Ajouter l'élément au canvas
+        document.getElementById('canvas').appendChild(el);
+        
+        // Rendre l'élément déplaçable
+        makeDraggable(el);
+        
+        // Sélectionner l'élément
+        selectElement(el);
+        
+        // Sauvegarder l'état
+        saveState();
+        
+        return el;
+    }
+    
+    // Fonction pour rendre un élément déplaçable
+    function makeDraggable(el) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        
+        // Empêcher la propagation des clics pour éviter la désélection
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            selectElement(el);
+        });
+        
+        // Gestionnaire pour le déplacement
+        el.onmousedown = dragMouseDown;
+        
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            
+            // Obtenir la position initiale de la souris
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            
+            // Arrêter de déplacer quand le bouton de la souris est relâché
+            document.onmouseup = closeDragElement;
+            
+            // Appeler la fonction quand la souris se déplace
+            document.onmousemove = elementDrag;
+        }
+        
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            
+            // Calculer la nouvelle position
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            
+            // Définir la nouvelle position de l'élément
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+            
+            // Mettre à jour la position dans le panneau des propriétés si l'élément est sélectionné
+            if (selectedEl === el) {
+                document.getElementById('element-x').value = el.offsetLeft;
+                document.getElementById('element-y').value = el.offsetTop;
+            }
+        }
+        
+        function closeDragElement() {
+            // Arrêter de déplacer quand le bouton de la souris est relâché
+            document.onmouseup = null;
+            document.onmousemove = null;
+            
+            // Sauvegarder l'état après le déplacement
+            saveState();
+        }
+    }
+    
+    // Fonction pour sélectionner un élément
+    function selectElement(el) {
+        // Désélectionner l'élément précédemment sélectionné
+        unselectAll();
+        
+        // Sélectionner le nouvel élément
+        selectedEl = el;
+        el.classList.add('selected');
+        
+        // Ajouter les poignées de redimensionnement
+        addResizeHandles(el);
+        
+        // Afficher la barre d'outils contextuelle
+        const toolbar = document.getElementById('context-toolbar');
+        toolbar.style.display = 'flex';
+        
+        // Positionner la barre d'outils au-dessus de l'élément
+        const rect = el.getBoundingClientRect();
+        const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+        
+        toolbar.style.top = (rect.top - canvasRect.top - toolbar.offsetHeight - 10) + 'px';
+        toolbar.style.left = (rect.left - canvasRect.left + (rect.width / 2) - (toolbar.offsetWidth / 2)) + 'px';
+        
+        // Afficher les propriétés de l'élément dans le panneau droit
+        document.querySelector('.no-selection-message').style.display = 'none';
+        document.getElementById('element-properties').style.display = 'block';
+        
+        // Mettre à jour les champs du panneau des propriétés
+        document.getElementById('element-id').value = el.id || '';
+        document.getElementById('element-text').value = el.innerHTML || el.value || '';
+        document.getElementById('element-x').value = el.offsetLeft;
+        document.getElementById('element-y').value = el.offsetTop;
+        document.getElementById('element-width').value = el.offsetWidth;
+        document.getElementById('element-height').value = el.offsetHeight;
+        
+        // Récupérer la rotation
+        const transformStyle = el.style.transform || '';
+        const rotationMatch = transformStyle.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
+        const rotation = rotationMatch ? parseFloat(rotationMatch[1]) : 0;
+        document.getElementById('element-rotation').value = rotation;
+        
+        // Récupérer les valeurs de padding
+        const pdx = parseInt(el.style.paddingLeft) || 0;
+        const pady = parseInt(el.style.paddingTop) || 0;
+        document.getElementById('element-pdx').value = pdx;
+        document.getElementById('element-pady').value = pady;
+        
+        // Couleurs
+        document.getElementById('element-color').value = rgbToHex(el.style.color || '#000000');
+        document.getElementById('element-bg-color').value = rgbToHex(el.style.backgroundColor || '#ffffff');
+        
+        // Bordure
+        const borderStyle = el.style.borderStyle || 'none';
+        document.getElementById('element-border-style').value = borderStyle;
+        document.getElementById('element-border-color').value = rgbToHex(el.style.borderColor || '#000000');
+        
+        // Effet de pulsation pour montrer la sélection
+        el.animate([
+            { boxShadow: '0 0 0 2px var(--primary), 0 0 8px rgba(0, 120, 212, 0.5)' },
+            { boxShadow: '0 0 0 3px var(--primary), 0 0 12px rgba(0, 120, 212, 0.7)' },
+            { boxShadow: '0 0 0 2px var(--primary), 0 0 8px rgba(0, 120, 212, 0.5)' }
+        ], {
+            duration: 600,
+            iterations: 1
+        });
+        
+        // Ajouter un attribut tabindex pour permettre la navigation au clavier
+        el.setAttribute('tabindex', '0');
+        el.focus();
+        
+        // Ajouter un écouteur d'événement keydown directement sur l'élément
+        el.onkeydown = function(e) {
+            const step = e.shiftKey ? 10 : 1;
+            let left = parseInt(el.style.left) || 0;
+            let top = parseInt(el.style.top) || 0;
+            let moved = false;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    left -= step;
+                    moved = true;
+                    break;
+                case 'ArrowRight':
+                    left += step;
+                    moved = true;
+                    break;
+                case 'ArrowUp':
+                    top -= step;
+                    moved = true;
+                    break;
+                case 'ArrowDown':
+                    top += step;
+                    moved = true;
+                    break;
+                case 'Delete':
+                    deleteElement();
+                    return;
+                case 'd':
+                    if (e.ctrlKey) {
+                        duplicateElement();
+                        return;
+                    }
+                    break;
+            }
+            
+            if (moved) {
+                e.preventDefault();
+                
+                // Appliquer les nouvelles coordonnées
+                el.style.left = left + 'px';
+                el.style.top = top + 'px';
+                
+                // Mettre à jour les champs du panneau des propriétés
+                document.getElementById('element-x').value = left;
+                document.getElementById('element-y').value = top;
+                
+                // Mettre à jour les poignées de redimensionnement
+                document.querySelectorAll('.resize-handle').forEach(handle => {
+                    updateHandlePosition(handle, el);
+                });
+                
+                // Mettre à jour la barre d'outils contextuelle
+                const toolbar = document.getElementById('context-toolbar');
+                const rect = el.getBoundingClientRect();
+                const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+                
+                toolbar.style.top = (rect.top - canvasRect.top - toolbar.offsetHeight - 10) + 'px';
+                toolbar.style.left = (rect.left - canvasRect.left + (rect.width / 2) - (toolbar.offsetWidth / 2)) + 'px';
+                
+                // Sauvegarder l'état
+                saveState();
+            }
+        };
+    }
+    
+    // Fonction pour désélectionner tous les éléments
+    function unselectAll() {
+        if (selectedEl) {
+            selectedEl.classList.remove('selected');
+            
+            // Supprimer l'attribut tabindex et l'écouteur d'événement keydown
+            selectedEl.removeAttribute('tabindex');
+            selectedEl.onkeydown = null;
+            selectedEl.blur();
+            
+            // Supprimer les poignées de redimensionnement
+            removeResizeHandles();
+            
+            selectedEl = null;
+        }
+        
+        // Masquer la barre d'outils contextuelle
+        document.getElementById('context-toolbar').style.display = 'none';
+        
+        // Masquer les propriétés
+        document.querySelector('.no-selection-message').style.display = 'block';
+        document.getElementById('element-properties').style.display = 'none';
+    }
+    
+    // Fonction pour convertir RGB en hexadécimal
+    function rgbToHex(rgb) {
+        if (!rgb || rgb === 'transparent' || rgb === 'none' || rgb === '') return '#ffffff';
+        
+        // Vérifier si c'est déjà un code hexadécimal
+        if (rgb.charAt(0) === '#') return rgb;
+        
+        // Extraire les valeurs RGB
+        const rgbMatch = rgb.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+        if (rgbMatch) {
+            const r = parseInt(rgbMatch[1], 10);
+            const g = parseInt(rgbMatch[2], 10);
+            const b = parseInt(rgbMatch[3], 10);
+            
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        return '#ffffff';
+    }
+    
+    // Fonction pour mettre à jour les propriétés d'un élément
+    function updateElementProperties() {
+        if (!selectedEl) return;
+        
+        // Mettre à jour l'ID
+        const newId = document.getElementById('element-id').value;
+        if (newId) {
+            selectedEl.id = newId;
+        }
+        
+        // Mettre à jour le texte
+        const newText = document.getElementById('element-text').value;
+        if (selectedEl.tagName === 'INPUT' || selectedEl.tagName === 'TEXTAREA') {
+            selectedEl.value = newText;
+        } else {
+            selectedEl.innerHTML = newText;
+        }
+        
+        // Mettre à jour la position
+        const x = parseInt(document.getElementById('element-x').value);
+        const y = parseInt(document.getElementById('element-y').value);
+        if (!isNaN(x)) selectedEl.style.left = x + 'px';
+        if (!isNaN(y)) selectedEl.style.top = y + 'px';
+        
+        // Mettre à jour les dimensions
+        const width = parseInt(document.getElementById('element-width').value);
+        const height = parseInt(document.getElementById('element-height').value);
+        if (!isNaN(width)) selectedEl.style.width = width + 'px';
+        if (!isNaN(height)) selectedEl.style.height = height + 'px';
+        
+        // Mettre à jour la rotation
+        const rotation = parseInt(document.getElementById('element-rotation').value) || 0;
+        // Préserver les autres transformations si elles existent
+        let transform = selectedEl.style.transform || '';
+        // Remplacer ou ajouter la rotation
+        if (transform.includes('rotate(')) {
+            transform = transform.replace(/rotate\((-?\d+(?:\.\d+)?)deg\)/, `rotate(${rotation}deg)`);
+        } else {
+            transform += ` rotate(${rotation}deg)`;
+        }
+        selectedEl.style.transform = transform.trim();
+        
+        // Mettre à jour le padding
+        const pdx = parseInt(document.getElementById('element-pdx').value) || 0;
+        const pady = parseInt(document.getElementById('element-pady').value) || 0;
+        selectedEl.style.paddingLeft = pdx + 'px';
+        selectedEl.style.paddingRight = pdx + 'px';
+        selectedEl.style.paddingTop = pady + 'px';
+        selectedEl.style.paddingBottom = pady + 'px';
+        
+        // Mettre à jour les couleurs
+        const color = document.getElementById('element-color').value;
+        const bgColor = document.getElementById('element-bg-color').value;
+        selectedEl.style.color = color;
+        selectedEl.style.backgroundColor = bgColor;
+        
+        // Mettre à jour la bordure
+        const borderStyle = document.getElementById('element-border-style').value;
+        const borderColor = document.getElementById('element-border-color').value;
+        selectedEl.style.borderStyle = borderStyle;
+        selectedEl.style.borderColor = borderColor;
+        
+        // Sauvegarder l'état
+        saveState();
+    }
+    
+    // Fonction pour supprimer un élément
+    function deleteElement() {
+        if (!selectedEl) return;
+        
+        // Supprimer l'élément du canvas
+        selectedEl.remove();
+        
+        // Désélectionner
+        unselectAll();
+        
+        // Sauvegarder l'état
+        saveState();
+        
+        // Afficher une notification
+        showNotification('Elément supprimé');
+    }
+    
+    // Fonction pour dupliquer un élément
+    function duplicateElement() {
+        if (!selectedEl) return;
+        
+        // Créer un clone de l'élément
+        const clone = selectedEl.cloneNode(true);
+        
+        // Générer un nouvel ID unique pour le clone
+        if (clone.id) {
+            const type = clone.id.split('-')[0];
+            clone.id = generateUniqueId(type);
+        }
+        
+        // Décaler légèrement la position
+        clone.style.left = (parseInt(selectedEl.style.left) + 20) + 'px';
+        clone.style.top = (parseInt(selectedEl.style.top) + 20) + 'px';
+        
+        // Ajouter le clone au canvas
+        document.getElementById('canvas').appendChild(clone);
+        
+        // Rendre le clone déplaçable
+        makeDraggable(clone);
+        
+        // Sélectionner le clone
+        selectElement(clone);
+        
+        // Sauvegarder l'état
+        saveState();
+        
+        // Afficher une notification
+        showNotification('Elément dupliqué');
+    }
+    
+    // Fonction pour afficher une notification
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Fonction pour sauvegarder l'état actuel
+    function saveState() {
+        // Obtenir le contenu HTML du canvas
+        const canvasContent = document.getElementById('canvas').innerHTML;
+        
+        // Si nous avons fait des actions après un undo, supprimer les états suivants
+        if (currentStateIndex < stateHistory.length - 1) {
+            stateHistory = stateHistory.slice(0, currentStateIndex + 1);
+        }
+        
+        // Ajouter le nouvel état à l'historique
+        stateHistory.push(canvasContent);
+        currentStateIndex = stateHistory.length - 1;
+        
+        // Mettre à jour les boutons undo/redo
+        updateUndoRedoButtons();
+    }
+    
+    // Fonction pour annuler la dernière action
+    function undo() {
+        if (currentStateIndex <= 0) return;
+        
+        // Décrémenter l'index d'état
+        currentStateIndex--;
+        
+        // Restaurer l'état précédent
+        document.getElementById('canvas').innerHTML = stateHistory[currentStateIndex];
+        
+        // Réinitialiser les événements pour les éléments restaurés
+        initializeCanvasElements();
+        
+        // Mettre à jour les boutons undo/redo
+        updateUndoRedoButtons();
+        
+        // Désélectionner tous les éléments
+        unselectAll();
+    }
+    
+    // Fonction pour refaire la dernière action annulée
+    function redo() {
+        if (currentStateIndex >= stateHistory.length - 1) return;
+        
+        // Incrémenter l'index d'état
+        currentStateIndex++;
+        
+        // Restaurer l'état suivant
+        document.getElementById('canvas').innerHTML = stateHistory[currentStateIndex];
+        
+        // Réinitialiser les événements pour les éléments restaurés
+        initializeCanvasElements();
+        
+        // Mettre à jour les boutons undo/redo
+        updateUndoRedoButtons();
+        
+        // Désélectionner tous les éléments
+        unselectAll();
+    }
+    
+    // Fonction pour mettre à jour les boutons undo/redo
+    function updateUndoRedoButtons() {
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        
+        // Désactiver le bouton undo si nous sommes au premier état
+        undoBtn.disabled = currentStateIndex <= 0;
+        
+        // Désactiver le bouton redo si nous sommes au dernier état
+        redoBtn.disabled = currentStateIndex >= stateHistory.length - 1;
+    }
+    
+    // Fonction pour réinitialiser les événements pour les éléments du canvas
+    function initializeCanvasElements() {
+        const elements = document.querySelectorAll('.canvas-element');
+        elements.forEach(el => {
+            makeDraggable(el);
+        });
+    }
+    
+    // Fonction pour créer un nouveau projet
+    function newProject() {
+        if (confirm('Voulez-vous créer un nouveau projet ? Toutes les modifications non sauvegardées seront perdues.')) {
+            // Vider le canvas
+            document.getElementById('canvas').innerHTML = '';
+            
+            // Réinitialiser l'historique
+            stateHistory = [];
+            currentStateIndex = -1;
+            
+            // Sauvegarder l'état initial
+            saveState();
+            
+            // Afficher une notification
+            showNotification('Nouveau projet créé');
+        }
+    }
+    
+    // Fonction pour ouvrir un projet existant
+    function openProject() {
+        // Créer un élément input file temporaire
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.html';
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    // Créer un DOM temporaire pour parser le HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(event.target.result, 'text/html');
+                    
+                    // Chercher le contenu du design
+                    const exportedDesign = doc.getElementById('exported-design');
+                    
+                    if (exportedDesign && exportedDesign.innerHTML) {
+                        // Confirmer le remplacement du projet actuel
+                        if (confirm('Voulez-vous ouvrir ce projet ? Toutes les modifications non sauvegardées seront perdues.')) {
+                            // Vider le canvas actuel
+                            document.getElementById('canvas').innerHTML = exportedDesign.innerHTML;
+                            
+                            // Réinitialiser les événements pour les éléments importés
+                            initializeCanvasElements();
+                            
+                            // Réinitialiser l'historique
+                            stateHistory = [];
+                            currentStateIndex = -1;
+                            
+                            // Sauvegarder l'état initial
+                            saveState();
+                            
+                            // Afficher une notification
+                            showNotification('Projet ouvert avec succès');
+                        }
+                    } else {
+                        showNotification('Format de fichier non valide');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de l\'ouverture du projet:', error);
+                    showNotification('Erreur lors de l\'ouverture du projet');
+                }
+            };
+            
+            reader.readAsText(file);
+        });
+        
+        // Simuler un clic sur l'input file
+        fileInput.click();
+    }
+    
+    // Fonction pour exporter le design en HTML
+    function exportDesign() {
+        // Créer une copie du canvas sans les éléments de sélection
+        const canvas = document.getElementById('canvas');
+        const canvasClone = canvas.cloneNode(true);
+        
+        // Supprimer les classes de sélection
+        canvasClone.querySelectorAll('.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        // Créer le contenu HTML
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Exporté</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Styles pour les éléments du canvas */
+        .canvas-element {
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="exported-design" style="position: relative; width: 100%; height: 600px;">
+            ${canvasClone.innerHTML}
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        
+        // Créer un blob avec le contenu HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'design-export.html';
+        
+        // Simuler un clic sur le lien
+        document.body.appendChild(a);
+        a.click();
+        
+        // Nettoyer
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Afficher une notification
+        showNotification('Design exporté avec succès');
+    }
+    
+    // Fonction pour gérer l'upload d'une image
+    function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Vérifier que c'est bien une image
+        if (!file.type.startsWith('image/')) {
+            showNotification('Veuillez sélectionner une image valide');
+            return;
+        }
+        
+        // Créer un élément image
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = document.createElement('img');
+            img.className = 'canvas-element image-element';
+            img.id = generateUniqueId('image');
+            img.src = event.target.result;
+            img.style.position = 'absolute';
+            img.style.left = '50%';
+            img.style.top = '50%';
+            img.style.transform = 'translate(-50%, -50%)';
+            img.style.maxWidth = '200px';
+            img.style.maxHeight = '200px';
+            
+            // Ajouter l'image au canvas
+            document.getElementById('canvas').appendChild(img);
+            
+            // Rendre l'image déplaçable
+            makeDraggable(img);
+            
+            // Sélectionner l'image
+            selectElement(img);
+            
+            // Sauvegarder l'état
+            saveState();
+        };
+        
+        reader.readAsDataURL(file);
+        
+        // Réinitialiser l'input file
+        e.target.value = '';
+    }
+    
+    // Fonction pour personnaliser la taille du canvas
+    function customizeCanvas() {
+        // Créer une boîte de dialogue modale
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '1000';
+        
+        // Créer le contenu de la boîte de dialogue
+        const content = document.createElement('div');
+        content.style.backgroundColor = 'white';
+        content.style.padding = '20px';
+        content.style.borderRadius = '5px';
+        content.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+        content.style.width = '400px';
+        
+        // Titre
+        const title = document.createElement('h3');
+        title.textContent = 'Personnaliser la taille du canvas';
+        title.style.marginBottom = '20px';
+        content.appendChild(title);
+        
+        // Champs de saisie pour la largeur et la hauteur
+        const canvas = document.getElementById('canvas');
+        const currentWidth = parseInt(canvas.style.width) || 800;
+        const currentHeight = parseInt(canvas.style.height) || 600;
+        
+        // Créer les champs de saisie
+        const widthLabel = document.createElement('label');
+        widthLabel.textContent = 'Largeur (px):';
+        widthLabel.style.display = 'block';
+        widthLabel.style.marginBottom = '5px';
+        content.appendChild(widthLabel);
+        
+        const widthInput = document.createElement('input');
+        widthInput.type = 'number';
+        widthInput.value = currentWidth;
+        widthInput.style.width = '100%';
+        widthInput.style.marginBottom = '15px';
+        widthInput.style.padding = '8px';
+        widthInput.style.boxSizing = 'border-box';
+        content.appendChild(widthInput);
+        
+        const heightLabel = document.createElement('label');
+        heightLabel.textContent = 'Hauteur (px):';
+        heightLabel.style.display = 'block';
+        heightLabel.style.marginBottom = '5px';
+        content.appendChild(heightLabel);
+        
+        const heightInput = document.createElement('input');
+        heightInput.type = 'number';
+        heightInput.value = currentHeight;
+        heightInput.style.width = '100%';
+        heightInput.style.marginBottom = '20px';
+        heightInput.style.padding = '8px';
+        heightInput.style.boxSizing = 'border-box';
+        content.appendChild(heightInput);
+        
+        // Ajout d'informations sur les raccourcis clavier
+        const keyboardInfo = document.createElement('div');
+        keyboardInfo.style.marginBottom = '20px';
+        keyboardInfo.style.padding = '10px';
+        keyboardInfo.style.backgroundColor = '#f5f5f5';
+        keyboardInfo.style.borderRadius = '5px';
+        keyboardInfo.style.fontSize = '14px';
+        keyboardInfo.innerHTML = '<strong>Astuce :</strong> Vous pouvez aussi redimensionner le canvas en le sélectionnant puis en utilisant les touches flèchées (Shift+flèches pour un pas de 10px).';
+        content.appendChild(keyboardInfo);
+        
+        // Boutons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'flex-end';
+        buttonContainer.style.gap = '10px';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Annuler';
+        cancelButton.className = 'btn';
+        cancelButton.style.padding = '8px 15px';
+        cancelButton.addEventListener('click', function() {
+            document.body.removeChild(modal);
+        });
+        buttonContainer.appendChild(cancelButton);
+        
+        const applyButton = document.createElement('button');
+        applyButton.textContent = 'Appliquer';
+        applyButton.className = 'btn btn-success';
+        applyButton.style.padding = '8px 15px';
+        applyButton.addEventListener('click', function() {
+            const newWidth = parseInt(widthInput.value) || 800;
+            const newHeight = parseInt(heightInput.value) || 600;
+            
+            // Appliquer les nouvelles dimensions
+            canvas.style.width = newWidth + 'px';
+            canvas.style.height = newHeight + 'px';
+            
+            // Sauvegarder l'état
+            saveState();
+            
+            // Afficher une notification
+            showNotification('Dimensions du canvas mises à jour');
+            
+            // Fermer la boîte de dialogue
+            document.body.removeChild(modal);
+        });
+        buttonContainer.appendChild(applyButton);
+        
+        content.appendChild(buttonContainer);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+    }
+    
+    // Fonction pour ouvrir un onglet dans le panneau des propriétés
+    function openTab(evt, tabName) {
+        // Masquer tous les contenus d'onglets
+        const tabContents = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < tabContents.length; i++) {
+            tabContents[i].classList.remove('active');
+        }
+        
+        // Désactiver tous les boutons d'onglets
+        const tabs = document.getElementsByClassName('tab');
+        for (let i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
+        }
+        
+        // Afficher le contenu de l'onglet sélectionné et activer le bouton
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+    
+    // Fonction pour activer/désactiver la grille
+    function toggleGrid() {
+        const canvas = document.getElementById('canvas');
+        
+        // Vérifier si la grille est déjà active
+        if (canvas.classList.contains('grid-active')) {
+            // Désactiver la grille
+            canvas.classList.remove('grid-active');
+            canvas.style.backgroundImage = 'none';
+            showNotification('Grille désactivée');
+        } else {
+            // Activer la grille
+            canvas.classList.add('grid-active');
+            canvas.style.backgroundImage = 'linear-gradient(#ddd 1px, transparent 1px), linear-gradient(90deg, #ddd 1px, transparent 1px)';
+            canvas.style.backgroundSize = '20px 20px';
+            showNotification('Grille activée');
+        }
+    }
+    
+    // Fonction pour activer/désactiver le mode aperçu
+    function togglePreview() {
+        const canvas = document.getElementById('canvas');
+        const contextToolbar = document.getElementById('context-toolbar');
+        
+        // Vérifier si le mode aperçu est déjà actif
+        if (canvas.classList.contains('preview-mode')) {
+            // Désactiver le mode aperçu
+            canvas.classList.remove('preview-mode');
+            
+            // Réactiver la sélection et le déplacement des éléments
+            document.querySelectorAll('.canvas-element').forEach(el => {
+                makeDraggable(el);
+            });
+            
+            // Afficher à nouveau la barre d'outils contextuelle si un élément est sélectionné
+            if (selectedEl) {
+                contextToolbar.style.display = 'flex';
+            }
+            
+            showNotification('Mode édition activé');
+        } else {
+            // Activer le mode aperçu
+            canvas.classList.add('preview-mode');
+            
+            // Désélectionner tous les éléments
+            unselectAll();
+            
+            // Désactiver temporairement la sélection et le déplacement des éléments
+            document.querySelectorAll('.canvas-element').forEach(el => {
+                el.style.cursor = 'default';
+                el.onmousedown = null;
+                
+                // Sauvegarder les événements click originaux
+                const originalClickEvents = el.onclick;
+                
+                // Remplacer par une fonction qui empêche la sélection
+                el.onclick = function(e) {
+                    e.stopPropagation();
+                    // Exécuter les événements click définis par l'utilisateur
+                    if (el.getAttribute('data-onclick')) {
+                        try {
+                            eval(el.getAttribute('data-onclick'));
+                        } catch (error) {
+                            console.error('Erreur lors de l\'exécution du code onclick:', error);
+                        }
+                    }
+                };
+            });
+            
+            // Masquer la barre d'outils contextuelle
+            contextToolbar.style.display = 'none';
+            
+            showNotification('Mode aperçu activé');
+        }
+    }
+    
+    // Fonction pour ajouter les poignées de redimensionnement à un élément
+    function addResizeHandles(el) {
+        // Supprimer les poignées existantes
+        removeResizeHandles();
+        
+        // Créer les poignées de redimensionnement
+        const positions = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+        const canvas = document.getElementById('canvas');
+        
+        positions.forEach(pos => {
+            const handle = document.createElement('div');
+            handle.className = 'resize-handle ' + pos;
+            handle.setAttribute('data-position', pos);
+            canvas.appendChild(handle);
+            
+            // Positionner la poignée par rapport à l'élément sélectionné
+            updateHandlePosition(handle, el);
+            
+            // Ajouter les événements de redimensionnement
+            handle.addEventListener('mousedown', startResize);
+        });
+    }
+    
+    // Fonction pour mettre à jour la position d'une poignée
+    function updateHandlePosition(handle, el) {
+        const pos = handle.getAttribute('data-position');
+        const canvas = document.getElementById('canvas');
+        
+        // Obtenir les coordonnées réelles de l'élément par rapport au canvas
+        const elRect = el.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        
+        // Calculer les positions relatives au canvas
+        const top = elRect.top - canvasRect.top;
+        const left = elRect.left - canvasRect.left;
+        const width = elRect.width;
+        const height = elRect.height;
+        
+        // Obtenir l'angle de rotation en radians
+        const transformStyle = el.style.transform || '';
+        const rotationMatch = transformStyle.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
+        const rotationDeg = rotationMatch ? parseFloat(rotationMatch[1]) : 0;
+        const rotationRad = rotationDeg * Math.PI / 180;
+        
+        // Calculer le centre de l'élément
+        const centerX = left + width / 2;
+        const centerY = top + height / 2;
+        
+        // Coordonnées des poignées par rapport au centre de l'élément
+        let handleX = 0;
+        let handleY = 0;
+        
+        // Déterminer les coordonnées de base de la poignée en fonction de sa position
+        switch(pos) {
+            case 'nw': // Nord-ouest
+                handleX = -width / 2;
+                handleY = -height / 2;
+                break;
+            case 'n': // Nord
+                handleX = 0;
+                handleY = -height / 2;
+                break;
+            case 'ne': // Nord-est
+                handleX = width / 2;
+                handleY = -height / 2;
+                break;
+            case 'e': // Est
+                handleX = width / 2;
+                handleY = 0;
+                break;
+            case 'se': // Sud-est
+                handleX = width / 2;
+                handleY = height / 2;
+                break;
+            case 's': // Sud
+                handleX = 0;
+                handleY = height / 2;
+                break;
+            case 'sw': // Sud-ouest
+                handleX = -width / 2;
+                handleY = height / 2;
+                break;
+            case 'w': // Ouest
+                handleX = -width / 2;
+                handleY = 0;
+                break;
+        }
+        
+        // Appliquer la rotation aux coordonnées de la poignée
+        const rotatedX = handleX * Math.cos(rotationRad) - handleY * Math.sin(rotationRad);
+        const rotatedY = handleX * Math.sin(rotationRad) + handleY * Math.cos(rotationRad);
+        
+        // Positionner la poignée en tenant compte de la rotation
+        handle.style.top = (centerY + rotatedY - 5) + 'px';
+        handle.style.left = (centerX + rotatedX - 5) + 'px';
+    }
+    
+    // Fonction pour supprimer les poignées de redimensionnement
+    function removeResizeHandles() {
+        document.querySelectorAll('.resize-handle').forEach(handle => {
+            handle.remove();
+        });
+    }
+    
+    // Variables pour le redimensionnement
+    let resizing = false;
+    let resizePosition = '';
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeStartWidth = 0;
+    let resizeStartHeight = 0;
+    let resizeStartLeft = 0;
+    let resizeStartTop = 0;
+    
+    // Fonction pour démarrer le redimensionnement
+    function startResize(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!selectedEl) return;
+        
+        resizing = true;
+        resizePosition = this.getAttribute('data-position');
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        resizeStartWidth = selectedEl.offsetWidth;
+        resizeStartHeight = selectedEl.offsetHeight;
+        resizeStartLeft = selectedEl.offsetLeft;
+        resizeStartTop = selectedEl.offsetTop;
+        
+        document.addEventListener('mousemove', resizeElement);
+        document.addEventListener('mouseup', stopResize);
+    }
+    
+    // Fonction pour redimensionner l'élément
+    function resizeElement(e) {
+        if (!resizing || !selectedEl) return;
+        
+        e.preventDefault();
+        
+        // Obtenir l'angle de rotation en radians
+        const transformStyle = selectedEl.style.transform || '';
+        const rotationMatch = transformStyle.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
+        const rotationDeg = rotationMatch ? parseFloat(rotationMatch[1]) : 0;
+        const rotationRad = rotationDeg * Math.PI / 180;
+        
+        // Calculer le déplacement en tenant compte de la rotation
+        const dx = e.clientX - resizeStartX;
+        const dy = e.clientY - resizeStartY;
+        
+        // Convertir le déplacement dans le repère de l'élément (pivoter dans le sens inverse)
+        const rotatedDx = dx * Math.cos(-rotationRad) - dy * Math.sin(-rotationRad);
+        const rotatedDy = dx * Math.sin(-rotationRad) + dy * Math.cos(-rotationRad);
+        
+        let newWidth = resizeStartWidth;
+        let newHeight = resizeStartHeight;
+        let newLeft = resizeStartLeft;
+        let newTop = resizeStartTop;
+        
+        // Redimensionner en fonction de la position de la poignée
+        switch(resizePosition) {
+            case 'nw': // Nord-ouest
+                newWidth = Math.max(20, resizeStartWidth - rotatedDx);
+                newHeight = Math.max(20, resizeStartHeight - rotatedDy);
+                // Ajuster la position pour maintenir le coin opposé fixe
+                if (rotationDeg === 0) {
+                    newLeft = resizeStartLeft + (resizeStartWidth - newWidth);
+                    newTop = resizeStartTop + (resizeStartHeight - newHeight);
+                } else {
+                    // Pour une rotation non nulle, nous devons calculer la nouvelle position
+                    // en tenant compte de la rotation et du point d'ancrage (coin SE)
+                    const deltaW = resizeStartWidth - newWidth;
+                    const deltaH = resizeStartHeight - newHeight;
+                    newLeft = resizeStartLeft + (deltaW * Math.cos(rotationRad) + deltaH * Math.sin(rotationRad));
+                    newTop = resizeStartTop + (-deltaW * Math.sin(rotationRad) + deltaH * Math.cos(rotationRad));
+                }
+                break;
+            case 'n': // Nord
+                newHeight = Math.max(20, resizeStartHeight - rotatedDy);
+                if (rotationDeg === 0) {
+                    newTop = resizeStartTop + (resizeStartHeight - newHeight);
+                } else {
+                    const deltaH = resizeStartHeight - newHeight;
+                    newLeft = resizeStartLeft + (deltaH * Math.sin(rotationRad));
+                    newTop = resizeStartTop + (deltaH * Math.cos(rotationRad));
+                }
+                break;
+            case 'ne': // Nord-est
+                newWidth = Math.max(20, resizeStartWidth + rotatedDx);
+                newHeight = Math.max(20, resizeStartHeight - rotatedDy);
+                if (rotationDeg === 0) {
+                    newTop = resizeStartTop + (resizeStartHeight - newHeight);
+                } else {
+                    const deltaH = resizeStartHeight - newHeight;
+                    newLeft = resizeStartLeft + (deltaH * Math.sin(rotationRad));
+                    newTop = resizeStartTop + (deltaH * Math.cos(rotationRad));
+                }
+                break;
+            case 'e': // Est
+                newWidth = Math.max(20, resizeStartWidth + rotatedDx);
+                break;
+            case 'se': // Sud-est
+                newWidth = Math.max(20, resizeStartWidth + rotatedDx);
+                newHeight = Math.max(20, resizeStartHeight + rotatedDy);
+                break;
+            case 's': // Sud
+                newHeight = Math.max(20, resizeStartHeight + rotatedDy);
+                break;
+            case 'sw': // Sud-ouest
+                newWidth = Math.max(20, resizeStartWidth - rotatedDx);
+                newHeight = Math.max(20, resizeStartHeight + rotatedDy);
+                if (rotationDeg === 0) {
+                    newLeft = resizeStartLeft + (resizeStartWidth - newWidth);
+                } else {
+                    const deltaW = resizeStartWidth - newWidth;
+                    newLeft = resizeStartLeft + (deltaW * Math.cos(rotationRad));
+                    newTop = resizeStartTop + (-deltaW * Math.sin(rotationRad));
+                }
+                break;
+            case 'w': // Ouest
+                newWidth = Math.max(20, resizeStartWidth - rotatedDx);
+                if (rotationDeg === 0) {
+                    newLeft = resizeStartLeft + (resizeStartWidth - newWidth);
+                } else {
+                    const deltaW = resizeStartWidth - newWidth;
+                    newLeft = resizeStartLeft + (deltaW * Math.cos(rotationRad));
+                    newTop = resizeStartTop + (-deltaW * Math.sin(rotationRad));
+                }
+                break;
+        }
+        
+        // Appliquer les nouvelles dimensions et position
+        selectedEl.style.width = newWidth + 'px';
+        selectedEl.style.height = newHeight + 'px';
+        selectedEl.style.left = newLeft + 'px';
+        selectedEl.style.top = newTop + 'px';
+        
+        // Mettre à jour les champs du panneau des propriétés
+        document.getElementById('element-width').value = newWidth;
+        document.getElementById('element-height').value = newHeight;
+        document.getElementById('element-x').value = newLeft;
+        document.getElementById('element-y').value = newTop;
+        
+        // Mettre à jour la position des poignées
+        document.querySelectorAll('.resize-handle').forEach(handle => {
+            updateHandlePosition(handle, selectedEl);
+        });
+        
+        // Mettre à jour la position de la barre d'outils contextuelle
+        const toolbar = document.getElementById('context-toolbar');
+        const rect = selectedEl.getBoundingClientRect();
+        const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+        
+        toolbar.style.top = (rect.top - canvasRect.top - toolbar.offsetHeight - 10) + 'px';
+        toolbar.style.left = (rect.left - canvasRect.left + (rect.width / 2) - (toolbar.offsetWidth / 2)) + 'px';
+    }
+    
+    // Fonction pour arrêter le redimensionnement
+    function stopResize() {
+        if (resizing) {
+            resizing = false;
+            document.removeEventListener('mousemove', resizeElement);
+            document.removeEventListener('mouseup', stopResize);
+            
+            // Sauvegarder l'état après le redimensionnement
+            saveState();
+        }
+    }
+    
+    // Fonction pour sélectionner le canvas
+    function selectCanvas() {
+        console.log('Fonction selectCanvas() appelée');
+        const canvas = document.getElementById('canvas');
+        // Désélectionner tout élément actuel
+        unselectAll();
+        
+        // S'assurer que le canvas a un attribut tabindex pour recevoir le focus
+        if (!canvas.hasAttribute('tabindex')) {
+            canvas.setAttribute('tabindex', '0');
+        }
+        
+        // Donner le focus au canvas
+        canvas.focus();
+        
+        // Mettre en évidence le canvas sélectionné
+        canvas.style.boxShadow = '0 0 0 3px var(--primary), 0 0 12px rgba(0, 120, 212, 0.7)';
+        canvas.style.borderColor = 'var(--primary)';
+        canvas.style.borderStyle = 'solid';
+        
+        // Créer les poignées si elles n'existent pas déjà
+        const sizeDisplay = document.getElementById('canvas-size-display');
+        const updateSizeDisplay = () => {
+            const width = parseInt(canvas.style.width) || 800;
+            const height = parseInt(canvas.style.height) || 600;
+            if (sizeDisplay) {
+                sizeDisplay.textContent = `${width} x ${height} px`;
+            }
+        };
+        addResizeHandlesToCanvas(canvas, updateSizeDisplay);
+        
+        // Afficher les poignées de redimensionnement
+        document.querySelectorAll('.canvas-resize-handle').forEach(handle => {
+            handle.style.display = 'block';
+        });
+        
+        // Notification
+        showNotification('Canvas sélectionné - Utilisez les flèches ou les poignées pour redimensionner');
+    }
+
+    // Fonction pour ajouter les poignées de redimensionnement au canvas
+    function addResizeHandlesToCanvas(canvas, updateCallback) {
+        const positions = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+        
+        // Supprimer les poignées existantes s'il y en a
+        document.querySelectorAll('.canvas-resize-handle').forEach(handle => {
+            handle.remove();
+        });
+        
+        // Créer les poignées de redimensionnement
+        positions.forEach(pos => {
+            const handle = document.createElement('div');
+            handle.className = `canvas-resize-handle resize-handle-${pos}`;
+            handle.style.position = 'absolute';
+            handle.style.width = '16px';
+            handle.style.height = '16px';
+            handle.style.backgroundColor = '#0078d4';
+            handle.style.border = '2px solid white';
+            handle.style.borderRadius = '50%';
+            handle.style.zIndex = '1000';
+            handle.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+            handle.style.display = 'block'; // Visible par défaut
+            
+            // Positionner la poignée selon sa position
+            switch(pos) {
+                case 'nw': 
+                    handle.style.top = '-6px'; 
+                    handle.style.left = '-6px'; 
+                    handle.style.cursor = 'nw-resize';
+                    break;
+                case 'n': 
+                    handle.style.top = '-6px'; 
+                    handle.style.left = '50%'; 
+                    handle.style.transform = 'translateX(-50%)'; 
+                    handle.style.cursor = 'n-resize';
+                    break;
+                case 'ne': 
+                    handle.style.top = '-6px'; 
+                    handle.style.right = '-6px'; 
+                    handle.style.cursor = 'ne-resize';
+                    break;
+                case 'e': 
+                    handle.style.top = '50%'; 
+                    handle.style.right = '-6px'; 
+                    handle.style.transform = 'translateY(-50%)'; 
+                    handle.style.cursor = 'e-resize';
+                    break;
+                case 'se': 
+                    handle.style.bottom = '-6px'; 
+                    handle.style.right = '-6px'; 
+                    handle.style.cursor = 'se-resize';
+                    break;
+                case 's': 
+                    handle.style.bottom = '-6px'; 
+                    handle.style.left = '50%'; 
+                    handle.style.transform = 'translateX(-50%)'; 
+                    handle.style.cursor = 's-resize';
+                    break;
+                case 'sw': 
+                    handle.style.bottom = '-6px'; 
+                    handle.style.left = '-6px'; 
+                    handle.style.cursor = 'sw-resize';
+                    break;
+                case 'w': 
+                    handle.style.top = '50%'; 
+                    handle.style.left = '-6px'; 
+                    handle.style.transform = 'translateY(-50%)'; 
+                    handle.style.cursor = 'w-resize';
+                    break;
+            }
+            
+            // Ajouter les événements de redimensionnement
+            handle.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startWidth = parseInt(canvas.style.width) || 800;
+                const startHeight = parseInt(canvas.style.height) || 600;
+                
+                // Fonction pour redimensionner pendant le déplacement de la souris
+                function resize(e) {
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    
+                    // Calculer les nouvelles dimensions selon la poignée utilisée
+                    if (pos.includes('e')) {
+                        newWidth = startWidth + (e.clientX - startX);
+                    }
+                    if (pos.includes('w')) {
+                        newWidth = startWidth - (e.clientX - startX);
+                    }
+                    if (pos.includes('s')) {
+                        newHeight = startHeight + (e.clientY - startY);
+                    }
+                    if (pos.includes('n')) {
+                        newHeight = startHeight - (e.clientY - startY);
+                    }
+                    
+                    // Appliquer les dimensions minimales
+                    newWidth = Math.max(100, newWidth);
+                    newHeight = Math.max(100, newHeight);
+                    
+                    // Appliquer les nouvelles dimensions
+                    canvas.style.width = newWidth + 'px';
+                    canvas.style.height = newHeight + 'px';
+                    
+                    // Mettre à jour l'affichage des dimensions
+                    if (updateCallback) updateCallback();
+                    
+                    // Afficher les dimensions actuelles
+                    showNotification(`Canvas: ${newWidth}px × ${newHeight}px`);
+                }
+                
+                // Fonction pour arrêter le redimensionnement
+                function stopResize() {
+                    document.removeEventListener('mousemove', resize);
+                    document.removeEventListener('mouseup', stopResize);
+                    
+                    // Sauvegarder l'état après le redimensionnement
+                    saveState();
+                }
+                
+                // Ajouter les écouteurs d'événements temporaires
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResize);
+            });
+            
+            // Ajouter la poignée au canvas
+            canvas.appendChild(handle);
+        });
+    }
+    
+    // Fonction pour rendre le canvas redimensionnable avec les touches fléchées et la souris
+    function makeCanvasResizable() {
+        const canvas = document.getElementById('canvas');
+        const sizeDisplay = document.getElementById('canvas-size-display');
+        
+        console.log('Initialisation du redimensionnement du canvas');
+        console.log('Canvas:', canvas);
+        
+        // S'assurer que le canvas a des dimensions initiales
+        if (!canvas.style.width) canvas.style.width = '800px';
+        if (!canvas.style.height) canvas.style.height = '600px';
+        
+        // Mettre à jour l'affichage des dimensions
+        const updateSizeDisplay = () => {
+            const width = parseInt(canvas.style.width) || 800;
+            const height = parseInt(canvas.style.height) || 600;
+            if (sizeDisplay) {
+                sizeDisplay.textContent = `${width} x ${height} px`;
+            }
+        };
+        
+        // Initialiser l'affichage des dimensions
+        updateSizeDisplay();
+        
+        // Ajouter un attribut tabindex pour permettre la navigation au clavier
+        canvas.setAttribute('tabindex', '0');
+        
+        // Supprimer les anciens écouteurs d'événements pour éviter les doublons
+        canvas.removeEventListener('keydown', canvasKeyHandler);
+        
+        // Ajouter une bordure visible quand le canvas est sélectionné
+        canvas.addEventListener('focus', function() {
+            this.style.boxShadow = '0 0 0 3px var(--primary), 0 0 12px rgba(0, 120, 212, 0.7)';
+            this.style.borderColor = 'var(--primary)';
+            this.style.borderStyle = 'solid';
+            showNotification('Canvas sélectionné - Utilisez les flèches pour redimensionner (Shift+flèches pour 10px)');
+        });
+        
+        canvas.addEventListener('blur', function() {
+            this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+            this.style.borderColor = '#ccc';
+            this.style.borderStyle = 'dashed';
+            
+            // Masquer les poignées de redimensionnement
+            document.querySelectorAll('.canvas-resize-handle').forEach(handle => {
+                handle.style.display = 'none';
+            });
+        });
+        
+        // Ajouter un écouteur d'événement click pour sélectionner le canvas
+        canvas.addEventListener('click', function(e) {
+            // Ne sélectionner le canvas que si on clique directement dessus (pas sur un élément enfant)
+            if (e.target === this) {
+                this.focus();
+            }
+        });
+        
+        // Fonction de gestion des touches pour le redimensionnement du canvas
+        function canvasKeyHandler(e) {
+            console.log('Touche pressée sur le canvas:', e.key);
+            const step = e.shiftKey ? 10 : 1;
+            let width = parseInt(canvas.style.width) || 800;
+            let height = parseInt(canvas.style.height) || 600;
+            let resized = false;
+            
+            switch(e.key) {
+                case 'ArrowRight':
+                    width += step;
+                    resized = true;
+                    break;
+                case 'ArrowLeft':
+                    width = Math.max(100, width - step); // Minimum width of 100px
+                    resized = true;
+                    break;
+                case 'ArrowDown':
+                    height += step;
+                    resized = true;
+                    break;
+                case 'ArrowUp':
+                    height = Math.max(100, height - step); // Minimum height of 100px
+                    resized = true;
+                    break;
+            }
+            
+            if (resized) {
+                e.preventDefault();
+                console.log('Redimensionnement du canvas:', width, 'x', height);
+                
+                // Appliquer les nouvelles dimensions
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+                
+                // Mettre à jour l'affichage des dimensions
+                updateSizeDisplay();
+                
+                // Afficher les dimensions actuelles
+                showNotification(`Canvas: ${width}px × ${height}px`);
+                
+                // Sauvegarder l'état après un certain temps
+                clearTimeout(window.canvasResizeTimer);
+                window.canvasResizeTimer = setTimeout(() => {
+                    saveState();
+                }, 500);
+            }
+        }
+        
+        // Ajouter l'écouteur d'événement keydown pour le redimensionnement
+        canvas.addEventListener('keydown', canvasKeyHandler);
+        
+        // Les poignées seront ajoutées lors de la sélection du canvas
+        
+        // Afficher une notification pour informer l'utilisateur
+        setTimeout(() => {
+            showNotification('Cliquez sur le bouton "Sélectionner le canvas" puis utilisez les flèches ou les poignées');
+        }, 1000);
+    }
+    
+    // Fonction pour gérer les touches du clavier
+    function handleKeyboardNavigation(e) {
+        // Vérifier si un élément est sélectionné et si nous ne sommes pas en train d'éditer un champ de texte
+        if (!selectedEl || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return;
+        }
+        
+        // Définir le pas de déplacement (1px par défaut, 10px avec Shift)
+        const step = e.shiftKey ? 10 : 1;
+        
+        // Obtenir les coordonnées actuelles
+        let left = parseInt(selectedEl.style.left) || 0;
+        let top = parseInt(selectedEl.style.top) || 0;
+        
+        // Déplacer l'élément selon la touche pressée
+        let moved = false;
+        
+        if (e.key === 'ArrowLeft') {
+            left -= step;
+            moved = true;
+            e.preventDefault();
+        } else if (e.key === 'ArrowRight') {
+            left += step;
+            moved = true;
+            e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+            top -= step;
+            moved = true;
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            top += step;
+            moved = true;
+            e.preventDefault();
+        } else if (e.key === 'Delete') {
+            deleteElement();
+            e.preventDefault();
+            return;
+        } else if (e.key === 'd' && e.ctrlKey) {
+            duplicateElement();
+            e.preventDefault();
+            return;
+        }
+        
+        if (moved) {
+            // Appliquer directement les nouvelles coordonnées
+            selectedEl.style.left = left + 'px';
+            selectedEl.style.top = top + 'px';
+            
+            // Mettre à jour les champs du panneau des propriétés
+            document.getElementById('element-x').value = left;
+            document.getElementById('element-y').value = top;
+            
+            // Mettre à jour les poignées de redimensionnement
+            document.querySelectorAll('.resize-handle').forEach(handle => {
+                updateHandlePosition(handle, selectedEl);
+            });
+            
+            // Mettre à jour la barre d'outils contextuelle
+            const toolbar = document.getElementById('context-toolbar');
+            if (toolbar && toolbar.style.display !== 'none') {
+                const rect = selectedEl.getBoundingClientRect();
+                const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+                
+                toolbar.style.top = (rect.top - canvasRect.top - toolbar.offsetHeight - 10) + 'px';
+                toolbar.style.left = (rect.left - canvasRect.left + (rect.width / 2) - (toolbar.offsetWidth / 2)) + 'px';
+            }
+            
+            // Sauvegarder l'état
+            saveState();
+        }
+    }
+    
+    // Initialiser les événements pour les boutons d'action
+    document.addEventListener('DOMContentLoaded', function() {
+        // Boutons de la barre d'outils principale
+        document.getElementById('new-btn').addEventListener('click', newProject);
+        document.getElementById('open-btn').addEventListener('click', openProject);
+        document.getElementById('export-btn').addEventListener('click', exportDesign);
+        document.getElementById('undo-btn').addEventListener('click', undo);
+        document.getElementById('redo-btn').addEventListener('click', redo);
+        
+        // Boutons de la barre d'outils contextuelle
+        document.getElementById('delete-btn').addEventListener('click', deleteElement);
+        document.getElementById('duplicate-btn').addEventListener('click', duplicateElement);
+        
+        // Boutons du panneau d'insertion
+        document.querySelectorAll('.element-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                addElement(this.getAttribute('data-type'));
+            });
+        });
+        
+        // Champs du panneau de propriétés
+        document.querySelectorAll('#element-properties input, #element-properties select').forEach(input => {
+            input.addEventListener('change', updateElementProperties);
+        });
+        
+        // Ajouter l'écouteur d'événement pour les touches du clavier
+        document.addEventListener('keydown', handleKeyboardNavigation);
+        window.addEventListener('keydown', handleKeyboardNavigation); // Ajouter un écouteur supplémentaire sur window
+        
+        // Rendre le canvas redimensionnable avec les touches fléchées
+        makeCanvasResizable();
+        
+        // Ajouter une notification pour informer l'utilisateur des raccourcis clavier
+        setTimeout(() => {
+            showNotification('Utilisez les flèches du clavier pour déplacer les éléments sélectionnés (Shift+flèches pour 10px)');
+        }, 2000);
+        
+        // Ajouter une notification pour informer l'utilisateur du redimensionnement du canvas
+        setTimeout(() => {
+            showNotification('Cliquez sur le canvas puis utilisez les flèches pour le redimensionner');
+        }, 4000);
+    });
+    </script>
+</body>
+</html>
